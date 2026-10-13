@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narration Studio: Languages</title>
+<style>
+  :root {
+    --bg: #14171c; --panel: #1c2027; --field: #101318; --line: #2d333d;
+    --text: #e6e9ee; --muted: #8e97a5; --accent: #5aa9ff; --accent-strong: #3b8cf0;
+    --warn: #e0b050; --bad: #e5666d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center; padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 780px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 18px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.25rem; margin: 0; font-weight: 650; }
+  h2 { font-size: 1rem; margin: 0; font-weight: 650; }
+  label, .label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
+  textarea, select, input[type=text] {
+    width: 100%; background: var(--field); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; font: inherit;
+  }
+  textarea { min-height: 260px; resize: vertical; font-size: 1.05rem; line-height: 1.6; }
+  input[readonly] { color: var(--muted); }
+  textarea:focus, select:focus, input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 12px 18px;
+    color: #fff; background: var(--accent-strong); cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.secondary { background: #2c333f; }
+  button.secondary:hover:not(:disabled) { background: #384150; }
+  button.stop { background: #b9444b; }
+  button.small { padding: 8px 12px; font-size: .85rem; }
+  button.grow { flex: 1; min-width: 180px; }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .range-line { display: flex; align-items: center; gap: 12px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .status { font-size: .9rem; color: var(--muted); min-height: 1.3em; }
+  .bar { height: 8px; background: var(--field); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .hint { font-size: .82rem; color: var(--muted); line-height: 1.5; margin: 0; }
+  code { background: #0c0f13; padding: 1px 6px; border-radius: 5px; font-size: .9em; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); }
+
+  .cast { display: grid; gap: 8px; }
+  .cast-row { display: grid; grid-template-columns: minmax(100px, .8fr) 2fr auto auto; gap: 8px; align-items: center; }
+  .cast-row .spacer { width: 40px; }
+  @media (max-width: 640px) {
+    .cast-row { grid-template-columns: 1fr auto auto; }
+    .cast-row input[type=text] { grid-column: 1 / -1; }
+  }
+  .section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .chips .label { margin: 0 4px 0 0; }
+  .divider { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+
+  details { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  summary { cursor: pointer; font-weight: 600; }
+  summary.warn { color: var(--warn); }
+  details[open] > summary { margin-bottom: 10px; }
+  .dir-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .dir-row p { margin: 4px 0 0; font-size: .85rem; color: var(--muted); line-height: 1.45; }
+  .pv-row { display: grid; grid-template-columns: 150px 1fr; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .92rem; }
+  .pv-who { font-weight: 600; }
+  .pv-voice { color: var(--muted); font-size: .78rem; font-weight: 400; }
+  .pv-tag { color: var(--accent); font-size: .78rem; margin-right: 6px; }
+  .pv-pause { color: var(--muted); font-style: italic; }
+  .pv-warn { color: var(--warn); font-size: .88rem; padding: 4px 0; }
+  @media (max-width: 520px) { .pv-row { grid-template-columns: 1fr; gap: 2px; } }
+
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(680px, 94vw); max-height: 88vh; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .dlg { padding: 20px; display: grid; gap: 14px; }
+  .dlg-list { overflow: auto; max-height: 52vh; display: grid; gap: 10px; padding-right: 4px; }
+  .model-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); }
+  .model-row .wide { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .model-row { grid-template-columns: 1fr; } }
+
+  #toast { position: fixed; top: 16px; right: 16px; background: #243040; border: 1px solid var(--line);
+    padding: 10px 14px; border-radius: 10px; font-size: .9rem; max-width: 360px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 10; }
+  #toast.show { opacity: 1; }
+  #toast.error { background: #3a2226; border-color: #6b2f36; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<main>
+  <div class="panel">
+    <header>
+      <h1>Narration Studio: Languages</h1>
+      <div class="actions">
+        <a href="./">English voices app</a>
+        <button id="btn-models" class="secondary small" type="button">Manage models</button>
+        <button id="btn-sample" class="secondary small" type="button">Insert Spanish sample</button>
+      </div>
+    </header>
+
+    <div>
+      <div id="progress-wrap" class="bar" hidden><div id="progress"></div></div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <h2>Cast</h2>
+        <div class="actions">
+          <label class="check"><input type="checkbox" id="all-langs"> Show system voices for all languages</label>
+          <button id="btn-add-char" class="secondary small" type="button">Add character</button>
+        </div>
+      </div>
+      <div id="cast" class="cast"></div>
+      <p class="hint" style="margin-top:8px"><strong>On-device</strong> voices can be mixed, overlapped and saved as a .wav, but each language has only one voice. <strong>System</strong> voices (from your browser or operating system) have more variety and cover Mandarin and Arabic, but they only play live: no saving, no overlaps. If any line uses a system voice, the whole script plays live.</p>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Script</h2></div>
+      <div class="chips" id="toolbar"></div>
+      <textarea id="text" dir="auto" placeholder="Write or paste your text, or a script with characters:&#10;&#10;Lucía: ¿Lo oyes?&#10;Mateo: Sí... y no me gusta."></textarea>
+    </section>
+
+    <details id="directions">
+      <summary>Directions: what you can write in the script</summary>
+      <div class="dir-row">
+        <div><code>Name: line</code><p>Character speaks the line. Lines without a name use the Narrator. Use the buttons above the text box to add one.</p></div>
+        <span></span>
+      </div>
+      <div class="dir-row">
+        <div><code>[pause 1.5]</code><p>Silence for that many seconds, on its own line.</p></div>
+        <button class="secondary small" type="button" data-insert="pause">Insert</button>
+      </div>
+      <div class="dir-row">
+        <div><code>[overlap] Name: line</code><p>The line starts before the previous one ends. <code>[overlap 1]</code> starts it 1 second early (default 0.6). Only works when every line uses an on-device voice.</p></div>
+        <button class="secondary small" type="button" data-insert="overlap">Insert</button>
+      </div>
+      <div class="dir-row">
+        <div><code>blank line</code><p>A short pause between paragraphs.</p></div>
+        <span></span>
+      </div>
+      <div class="dir-row">
+        <div><code>[anything else]</code><p>Other bracketed text is skipped, not read aloud.</p></div>
+        <span></span>
+      </div>
+    </details>
+
+    <details id="preview">
+      <summary id="pv-summary">Script preview</summary>
+      <div id="pv-body"></div>
+    </details>
+
+    <div>
+      <label for="speed">Speed (system voices only): <span id="speed-val">1</span>x</label>
+      <div class="range-line"><input id="speed" type="range" min="0.6" max="1.5" step="0.05" value="1"></div>
+    </div>
+
+    <div class="actions">
+      <button id="btn-play" class="grow" type="button" disabled>Generate and play</button>
+      <button id="btn-stop" class="grow stop" type="button" hidden>Stop</button>
+      <button id="btn-save" class="secondary" type="button" hidden>Save .wav</button>
+    </div>
+
+    <p class="hint">On-device models run in your browser with no account or API key. The models here are Meta's MMS voices, which are licensed for non-commercial use only.</p>
+  </div>
+</main>
+
+<dialog id="models-dialog">
+  <div class="dlg">
+    <div class="section-head">
+      <h2>On-device models</h2>
+      <button id="btn-close-models" class="secondary small" type="button">Close</button>
+    </div>
+    <p class="hint">A model id with a slash, like <code>Xenova/mms-tts-spa</code>, downloads from Hugging Face the first time (about 38 MB) and is then cached. An id without a slash, like <code>mms-tts-hil</code>, loads from a <code>models</code> folder in your own GitHub repo. Tagalog and Hiligaynon need that: they have to be converted first with the <code>convert_mms.py</code> script. The sample text is what Preview speaks, so edit it if my wording is off.</p>
+    <div id="model-list" class="dlg-list"></div>
+    <button id="btn-add-model" class="secondary" type="button">Add a model</button>
+  </div>
+</dialog>
+
+<script type="module">
+/* ============ Defaults ============ */
+const DEFAULT_MODELS = [
+  { key: "spa", label: "Spanish (MMS)", id: "Xenova/mms-tts-spa", sample: "Hola, así es como sueno." },
+  { key: "tgl", label: "Tagalog (MMS, your model)", id: "mms-tts-tgl", sample: "Kumusta, ito ang tunog ko." },
+  { key: "hil", label: "Hiligaynon (MMS, your model)", id: "mms-tts-hil", sample: "Kamusta, amo ini ang akon tingog." }
+];
+const PREFERRED_LANGS = ["es", "zh", "ar", "fil", "tl"];
+const SYS_SAMPLES = {
+  es: "Hola, así es como sueno.", zh: "你好，这是我的声音。", ar: "مرحبًا، هذا هو صوتي.",
+  fil: "Kumusta, ito ang tunog ko.", tl: "Kumusta, ito ang tunog ko.", en: "Hi, this is how I sound."
+};
+const SAMPLE_TEXT = "Narrator: La puerta se abrió despacio y la lámpara tembló.\n\nLucía: ¿Lo oyes?\nMateo: Sí... y no me gusta nada.\n[overlap] Lucía: ¡Corre!\n[pause 1]\nNarrator: Y la noche se quedó en silencio.";
+
+/* PURE:START (no page access below this line until PURE:END) */
+function splitText(text, maxLen = 280) {
+  const sentences = text.replace(/\s+/g, " ").trim().match(/[^.!?…。！？؟]+[.!?…。！？؟]*["')\]”」]*\s*/g) || [text];
+  const chunks = []; let cur = "";
+  for (const s of sentences) {
+    if ((cur + s).length > maxLen && cur) { chunks.push(cur.trim()); cur = ""; }
+    if (s.length > maxLen) {
+      let rest = s.trim();
+      while (rest.length > maxLen) {
+        let cut = rest.lastIndexOf(" ", maxLen);
+        if (cut < maxLen / 2) cut = maxLen;
+        chunks.push(rest.slice(0, cut).trim());
+        rest = rest.slice(cut).trim();
+      }
+      if (rest) chunks.push(rest);
+    } else cur += s;
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.filter(Boolean);
+}
+
+function floatToWav(float32, sampleRate) {
+  const buffer = new ArrayBuffer(44 + float32.length * 2);
+  const v = new DataView(buffer);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + float32.length * 2, true); w(8, "WAVE");
+  w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, float32.length * 2, true);
+  for (let i = 0; i < float32.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return buffer;
+}
+
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+function parseScript(raw, cast) {
+  const items = [], warnings = [];
+  const byName = new Map();
+  cast.forEach(c => {
+    const k = c.name.trim().toLowerCase();
+    if (!k) return;
+    if (byName.has(k)) warnings.push(`Two characters are named "${c.name.trim()}". The first one is used.`);
+    else byName.set(k, c);
+  });
+  const narrator = cast[0];
+  let blankPending = false;
+
+  raw.split(/\r?\n/).forEach((line, idx) => {
+    const n = idx + 1;
+    let t = line.trim();
+    if (!t) { blankPending = items.length > 0; return; }
+    if (blankPending) {
+      if (items[items.length - 1].type === "speech") items.push({ type: "pause", sec: 0.4, auto: true });
+      blankPending = false;
+    }
+
+    let m = t.match(/^\[pause(?:\s+([\d.]+))?\]\s*$/i);
+    if (m) {
+      let sec = m[1] ? parseFloat(m[1]) : 1;
+      if (!isFinite(sec)) sec = 1;
+      items.push({ type: "pause", sec: clamp(sec, 0, 30) });
+      return;
+    }
+
+    let overlap = false, overlapSec = 0.6;
+    m = t.match(/^\[overlap(?:\s+([\d.]+))?\]\s*/i);
+    if (m) {
+      overlap = true;
+      if (m[1] && isFinite(parseFloat(m[1]))) overlapSec = clamp(parseFloat(m[1]), 0, 5);
+      t = t.slice(m[0].length);
+    }
+
+    let speaker = narrator;
+    m = t.match(/^(\p{L}[^:：\[\]]{0,23}?)\s*[:：]\s*(.*)$/u);
+    if (m && m[1].trim().split(/\s+/).length <= 2) {
+      const c = byName.get(m[1].trim().toLowerCase());
+      if (c) { speaker = c; t = m[2]; }
+      else warnings.push(`Line ${n}: "${m[1].trim()}" isn't in your cast, so the Narrator reads the whole line including that word. Add a character with that name to fix it.`);
+    }
+
+    t = t.replace(/\[[^\]]*\]/g, tag => { warnings.push(`Line ${n}: ${tag} isn't a direction the app knows, so it is skipped.`); return " "; })
+         .replace(/\s+/g, " ").trim();
+    if (!t) return;
+
+    if (overlap && !items.some(i => i.type === "speech")) {
+      warnings.push(`Line ${n}: [overlap] has no earlier line to overlap, so it is ignored.`);
+      overlap = false;
+    }
+    items.push({ type: "speech", speaker: speaker.name, voice: speaker.voice, text: t, overlap, overlapSec, line: n });
+  });
+  return { items, warnings };
+}
+
+function resample(a, from, to) {
+  if (from === to) return a;
+  const n = Math.round(a.length * to / from), out = new Float32Array(n), r = from / to;
+  for (let i = 0; i < n; i++) {
+    const x = i * r, i0 = Math.floor(x), i1 = Math.min(i0 + 1, a.length - 1), f = x - i0;
+    out[i] = a[i0] * (1 - f) + a[i1] * f;
+  }
+  return out;
+}
+
+// Joins all generated parts of one spoken line into a single buffer.
+function lineAudio(it, results, gap = 0.18, targetRate = null) {
+  const rate = targetRate || results[it.jobIdx[0]].rate;
+  const parts = [];
+  it.jobIdx.forEach((j, k) => {
+    if (k) parts.push(new Float32Array(Math.round(rate * gap)));
+    const r = results[j];
+    parts.push(r.rate === rate ? r.audio : resample(r.audio, r.rate, rate));
+  });
+  const len = parts.reduce((a, p) => a + p.length, 0);
+  const audio = new Float32Array(len);
+  let o = 0; parts.forEach(p => { audio.set(p, o); o += p.length; });
+  return { audio, rate };
+}
+
+function mixToWav(items, results) {
+  const GAP = 0.18;
+  const rate = results.find(Boolean).rate;
+  const placed = [];
+  let end = 0, prev = null;
+  for (const it of items) {
+    if (it.type === "pause") { end += it.sec; continue; }
+    const { audio } = lineAudio(it, results, GAP, rate);
+    const dur = audio.length / rate;
+    let start;
+    if (it.overlap && prev) start = Math.max(prev.start, prev.end - it.overlapSec);
+    else start = end > 0 ? end + GAP : 0;
+    placed.push({ start, audio });
+    prev = { start, end: start + dur };
+    end = Math.max(end, start + dur);
+  }
+  const out = new Float32Array(Math.ceil(end * rate) + 2);
+  for (const p of placed) {
+    const s = Math.round(p.start * rate);
+    for (let i = 0; i < p.audio.length; i++) out[s + i] += p.audio[i];
+  }
+  let peak = 0;
+  for (let i = 0; i < out.length; i++) { const a = Math.abs(out[i]); if (a > peak) peak = a; }
+  if (peak > 0.99) { const g = 0.99 / peak; for (let i = 0; i < out.length; i++) out[i] *= g; }
+  return { wav: floatToWav(out, rate), seconds: out.length / rate };
+}
+/* PURE:END */
+
+/* ============ Page ============ */
+const $ = id => document.getElementById(id);
+const textEl = $("text"), speedEl = $("speed"), castEl = $("cast"), toolbarEl = $("toolbar");
+const playBtn = $("btn-play"), stopBtn = $("btn-stop"), saveBtn = $("btn-save");
+const statusEl = $("status"), progWrap = $("progress-wrap"), progEl = $("progress");
+const pvSummary = $("pv-summary"), pvBody = $("pv-body");
+const modelsDialog = $("models-dialog"), allLangsEl = $("all-langs");
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+/* ---------- State ---------- */
+let models = DEFAULT_MODELS.map(m => ({ ...m }));
+let nextId = 1, nextModel = 1;
+let cast = [{ id: nextId++, name: "Narrator", voice: "m:spa" }];
+let systemVoices = [];
+let busy = false, cancelRequested = false;
+let audioEl = null, audioUrl = null, wavBlob = null, previewAudio = null;
+let stopPromise = null, stopResolve = null;
+const previewCache = new Map();
+
+const isModel = v => v.startsWith("m:");
+const modelByVoice = v => models.find(m => "m:" + m.key === v);
+const sysByVoice = v => systemVoices.find(x => "s:" + x.voiceURI === v);
+const baseLang = v => v.lang.toLowerCase().split(/[-_]/)[0];
+function voiceLabel(v) {
+  if (isModel(v)) return modelByVoice(v)?.label || "(model removed)";
+  const s = sysByVoice(v); return s ? s.name : "(system voice unavailable)";
+}
+const voiceAvailable = v => isModel(v) ? !!modelByVoice(v) : !!sysByVoice(v);
+
+/* ---------- UI helpers ---------- */
+function toast(msg, type = "info") {
+  const t = $("toast");
+  t.textContent = msg; t.className = "show " + (type === "error" ? "error" : "");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.className = "", 6000);
+}
+function setStatus(s) { statusEl.textContent = s; }
+function setProgress(p) {
+  progWrap.hidden = p == null;
+  if (p != null) progEl.style.width = clamp(p, 0, 100) + "%";
+}
+function syncControls() {
+  playBtn.disabled = busy || !textEl.value.trim();
+  document.querySelectorAll(".btn-preview").forEach(b => b.disabled = busy);
+  $("btn-sample").disabled = busy;
+}
+function showIdle() { playBtn.hidden = false; stopBtn.hidden = true; }
+function invalidateAudio() {
+  wavBlob = null; saveBtn.hidden = true;
+  if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
+}
+function stopAudios() {
+  if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; }
+  if (previewAudio) { previewAudio.pause(); previewAudio.currentTime = 0; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+/* ---------- Saved settings ---------- */
+function persist() {
+  try {
+    localStorage.setItem("nl.cast", JSON.stringify(cast.map(c => ({ name: c.name, voice: c.voice }))));
+    localStorage.setItem("nl.models", JSON.stringify(models));
+    localStorage.setItem("nl.text", textEl.value);
+    localStorage.setItem("nl.speed", speedEl.value);
+    localStorage.setItem("nl.all", allLangsEl.checked ? "1" : "");
+  } catch {}
+}
+function restore() {
+  try {
+    const m = JSON.parse(localStorage.getItem("nl.models"));
+    if (Array.isArray(m) && m.length && m.every(x => x && typeof x.key === "string" && typeof x.id === "string")) {
+      models = m.map(x => ({ key: x.key, label: String(x.label || x.key), id: x.id, sample: String(x.sample || "Hello") }));
+      models.forEach(x => { const n = parseInt(x.key.replace(/^c/, "")); if (n >= nextModel) nextModel = n + 1; });
+    }
+    const c = JSON.parse(localStorage.getItem("nl.cast"));
+    if (Array.isArray(c) && c.length && c.every(x => x && typeof x.name === "string" && typeof x.voice === "string")) {
+      cast = c.map((x, i) => ({ id: nextId++, name: i === 0 ? "Narrator" : x.name, voice: x.voice }));
+    }
+    const t = localStorage.getItem("nl.text"); if (t) textEl.value = t;
+    const s = parseFloat(localStorage.getItem("nl.speed")); if (s >= 0.6 && s <= 1.5) speedEl.value = s;
+    allLangsEl.checked = localStorage.getItem("nl.all") === "1";
+  } catch {}
+}
+
+/* ---------- System voices ---------- */
+function loadSystemVoices() {
+  systemVoices = ("speechSynthesis" in window) ? speechSynthesis.getVoices() : [];
+  if (!busy) { renderCast(); renderScriptPreview(); }
+}
+function visibleSystemVoices() {
+  return systemVoices.filter(v => allLangsEl.checked || PREFERRED_LANGS.includes(baseLang(v)));
+}
+function langName(code) {
+  try { return new Intl.DisplayNames(["en"], { type: "language" }).of(code) || code; } catch { return code; }
+}
+function buildVoiceSelect(selected) {
+  const sel = el("select");
+  const g1 = document.createElement("optgroup"); g1.label = "On-device (can be saved to a file)";
+  models.forEach(m => { const o = new Option(m.label, "m:" + m.key); g1.append(o); });
+  sel.append(g1);
+  const groups = new Map();
+  visibleSystemVoices().forEach(v => {
+    const g = langName(v.lang);
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(v);
+  });
+  [...groups.keys()].sort().forEach(g => {
+    const og = document.createElement("optgroup"); og.label = `System voices: ${g} (live playback only)`;
+    groups.get(g).sort((a, b) => a.name.localeCompare(b.name)).forEach(v =>
+      og.append(new Option(v.name + (v.localService ? "" : " (online)"), "s:" + v.voiceURI)));
+    sel.append(og);
+  });
+  if (![...sel.options].some(o => o.value === selected)) {
+    const o = new Option(`(unavailable) ${isModel(selected) ? "model" : "system voice"}`, selected);
+    o.disabled = true; sel.insertBefore(o, sel.firstChild);
+  }
+  sel.value = selected;
+  return sel;
+}
+function pickVoice() {
+  const used = new Set(cast.map(c => c.voice));
+  const cands = [...models.map(m => "m:" + m.key), ...visibleSystemVoices().map(v => "s:" + v.voiceURI)];
+  return cands.find(v => !used.has(v)) || cands[0] || "m:spa";
+}
+function sampleFor(lang) {
+  const b = lang.toLowerCase().split(/[-_]/)[0];
+  return SYS_SAMPLES[b] || SYS_SAMPLES.en;
+}
+
+/* ---------- Cast ---------- */
+function uniqueName(base) {
+  const names = new Set(cast.map(c => c.name.trim().toLowerCase()));
+  if (!names.has(base.toLowerCase())) return base;
+  let i = 2; while (names.has(`${base} ${i}`.toLowerCase())) i++;
+  return `${base} ${i}`;
+}
+function addCharacter(name) {
+  const c = { id: nextId++, name: name || uniqueName("Character"), voice: pickVoice() };
+  cast.push(c); return c;
+}
+function renderCast() {
+  castEl.replaceChildren();
+  cast.forEach((c, i) => {
+    const row = el("div", "cast-row"); row.dataset.id = c.id;
+    const name = el("input"); name.type = "text"; name.value = c.name; name.maxLength = 24;
+    name.setAttribute("aria-label", "Character name");
+    if (i === 0) name.readOnly = true;
+    const sel = buildVoiceSelect(c.voice); sel.setAttribute("aria-label", `Voice for ${c.name}`);
+    const prev = el("button", "secondary small btn-preview", "Preview"); prev.type = "button";
+    const rm = el("button", "secondary small", "Remove"); rm.type = "button";
+    row.append(name, sel, prev);
+    if (i === 0) row.append(el("span", "spacer")); else row.append(rm);
+    castEl.append(row);
+  });
+  syncControls();
+}
+function renderToolbar() {
+  toolbarEl.replaceChildren();
+  toolbarEl.append(el("span", "label", "Add a line for:"));
+  cast.forEach(c => {
+    if (!c.name.trim()) return;
+    const b = el("button", "secondary small", c.name.trim()); b.type = "button"; b.dataset.char = c.id;
+    toolbarEl.append(b);
+  });
+  toolbarEl.append(el("span", "divider"));
+  const p = el("button", "secondary small", "Pause"); p.type = "button"; p.dataset.insert = "pause";
+  const o = el("button", "secondary small", "Overlap"); o.type = "button"; o.dataset.insert = "overlap";
+  toolbarEl.append(p, o);
+}
+castEl.addEventListener("input", e => {
+  if (e.target.matches("input[type=text]")) {
+    const c = cast.find(x => x.id == e.target.closest(".cast-row").dataset.id);
+    const cleaned = e.target.value.replace(/[:：\[\]]/g, "");
+    if (cleaned !== e.target.value) e.target.value = cleaned;
+    c.name = cleaned; renderToolbar(); schedulePreview(); persist();
+  }
+});
+castEl.addEventListener("change", e => {
+  if (e.target.matches("select")) {
+    const c = cast.find(x => x.id == e.target.closest(".cast-row").dataset.id);
+    c.voice = e.target.value; invalidateAudio(); schedulePreview(); persist();
+  }
+});
+castEl.addEventListener("click", e => {
+  const row = e.target.closest(".cast-row"); if (!row) return;
+  const c = cast.find(x => x.id == row.dataset.id);
+  if (e.target.classList.contains("btn-preview")) previewVoice(c.voice, e.target);
+  else if (e.target.textContent === "Remove") {
+    cast = cast.filter(x => x !== c); renderCast(); renderToolbar(); schedulePreview(); persist();
+  }
+});
+$("btn-add-char").addEventListener("click", () => { addCharacter(); renderCast(); renderToolbar(); schedulePreview(); persist(); });
+allLangsEl.addEventListener("change", () => { renderCast(); persist(); });
+
+/* ---------- Inserting directions ---------- */
+function lineBounds(pos) {
+  const v = textEl.value;
+  const s = v.lastIndexOf("\n", pos - 1) + 1;
+  let e = v.indexOf("\n", pos); if (e === -1) e = v.length;
+  return [s, e];
+}
+function commit(newVal, caret) {
+  textEl.value = newVal; textEl.focus(); textEl.setSelectionRange(caret, caret);
+  textEl.dispatchEvent(new Event("input"));
+}
+function insertOnNewLine(snippet) {
+  const v = textEl.value, [s, e] = lineBounds(textEl.selectionStart), line = v.slice(s, e);
+  if (/^\s*\[overlap[^\]]*\]\s*$/i.test(line)) {
+    const add = (line.endsWith(" ") ? "" : " ") + snippet;
+    return commit(v.slice(0, e) + add + v.slice(e), e + add.length);
+  }
+  if (line.trim() === "") return commit(v.slice(0, s) + snippet + v.slice(e), s + snippet.length);
+  commit(v.slice(0, e) + "\n" + snippet + v.slice(e), e + 1 + snippet.length);
+}
+function insertOverlap() {
+  const v = textEl.value, [s, e] = lineBounds(textEl.selectionStart);
+  if (/^\s*\[overlap/i.test(v.slice(s, e))) return textEl.focus();
+  commit(v.slice(0, s) + "[overlap] " + v.slice(s), textEl.selectionStart + 10);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.char) { const c = cast.find(x => x.id == b.dataset.char); if (c) insertOnNewLine(`${c.name.trim()}: `); }
+  else if (b.dataset.insert === "pause") insertOnNewLine("[pause 1.5]");
+  else if (b.dataset.insert === "overlap") insertOverlap();
+});
+
+/* ---------- Script preview ---------- */
+let pvTimer = null;
+function schedulePreview() { clearTimeout(pvTimer); pvTimer = setTimeout(renderScriptPreview, 200); }
+function scriptWarnings(items, base) {
+  const w = [...base];
+  const speech = items.filter(i => i.type === "speech");
+  const live = speech.some(i => !isModel(i.voice));
+  if (live && speech.some(i => i.overlap)) w.push("Overlap only works when every line uses an on-device voice. With system voices, lines play one after another.");
+  const seen = new Set();
+  speech.forEach(i => { if (!voiceAvailable(i.voice) && !seen.has(i.speaker)) { seen.add(i.speaker); w.push(`${i.speaker}'s voice isn't available on this device. Pick another voice for that character.`); } });
+  return w;
+}
+function renderScriptPreview() {
+  const parsed = parseScript(textEl.value, cast);
+  const items = parsed.items, warnings = scriptWarnings(items, parsed.warnings);
+  const n = items.filter(i => i.type === "speech").length;
+  pvSummary.textContent = n
+    ? `Script preview: ${n} line${n === 1 ? "" : "s"}${warnings.length ? `, ${warnings.length} to check` : ""}`
+    : "Script preview";
+  pvSummary.classList.toggle("warn", warnings.length > 0);
+  pvBody.replaceChildren();
+  if (!items.length) { pvBody.append(el("p", "hint", "Nothing to read yet. Type or paste some text above.")); return; }
+  warnings.forEach(w => pvBody.append(el("div", "pv-warn", w)));
+  items.forEach(it => {
+    const row = el("div", "pv-row");
+    if (it.type === "pause") {
+      row.append(el("div", "pv-who"), el("div", "pv-pause", it.auto ? "paragraph pause" : `pause ${it.sec} s`));
+    } else {
+      const who = el("div", "pv-who", it.speaker);
+      who.append(el("div", "pv-voice", voiceLabel(it.voice)));
+      const txt = el("div"); txt.dir = "auto";
+      if (it.overlap) txt.append(el("span", "pv-tag", `overlaps by ${it.overlapSec} s`));
+      txt.append(document.createTextNode(it.text));
+      row.append(who, txt);
+    }
+    pvBody.append(row);
+  });
+}
+
+/* ---------- Model worker ---------- */
+let worker = null;
+const handlers = {};
+function startWorker() {
+  if (worker) return worker;
+  worker = new Worker("./lang-worker.js", { type: "module" });
+  worker.onmessage = e => handlers[e.data.type]?.(e.data);
+  worker.onerror = e => handlers.error?.({ message: e.message || "The voice worker failed to start." });
+  return worker;
+}
+function friendlyModelError(m) {
+  const id = m.model || "";
+  if (m.stage === "load" && id && !id.includes("/"))
+    return `Couldn't find the model files in models/${id}/ on this site. Convert the model and upload that folder to your repo (see the conversion steps), then try again.`;
+  if (m.stage === "load")
+    return `Couldn't load the model "${id}". The first use needs internet, and the id must be an ONNX model that works with Transformers.js. Details are in the console.`;
+  return "The voice model failed while generating. Details are in the console.";
+}
+// jobs: [{ text, model }] -> [{ audio, rate }] (null if cancelled)
+function runJob(jobs, onChunk) {
+  return new Promise((resolve, reject) => {
+    const w = startWorker();
+    const results = new Array(jobs.length);
+    handlers.progress = m => { setProgress(m.percent); setStatus(m.text); };
+    handlers.chunk = m => { results[m.index] = { audio: m.audio, rate: m.rate }; onChunk?.(m.index + 1, m.total); };
+    handlers.done = () => resolve(results);
+    handlers.cancelled = () => resolve(null);
+    handlers.error = m => { console.error(m); reject(new Error(friendlyModelError(m))); };
+    w.postMessage({ type: "generate", jobs });
+  });
+}
+
+/* ---------- Speaking with system voices ---------- */
+function speakSystem(text, voiceId, rate) {
+  return new Promise((resolve, reject) => {
+    const v = sysByVoice(voiceId);
+    if (!v) return reject(new Error("That system voice isn't available on this device."));
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = v; u.lang = v.lang; u.rate = rate;
+    u.onend = () => resolve();
+    u.onerror = e => (e.error === "canceled" || e.error === "interrupted") ? resolve() : reject(new Error(e.error));
+    speechSynthesis.speak(u);
+  });
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- Voice previews ---------- */
+async function previewVoice(voiceId, btn) {
+  if (busy) return;
+  stopAudios();
+  const label = btn.textContent;
+  try {
+    if (!voiceAvailable(voiceId)) throw new Error("That voice isn't available on this device.");
+    btn.textContent = "...";
+    if (isModel(voiceId)) {
+      const m = modelByVoice(voiceId);
+      const key = voiceId + "|" + m.id + "|" + m.sample;
+      let url = previewCache.get(key);
+      if (!url) {
+        cancelRequested = false; busy = true; syncControls();
+        const res = await runJob([{ text: m.sample, model: m.id }]);
+        if (!res) return;
+        url = URL.createObjectURL(new Blob([floatToWav(res[0].audio, res[0].rate)], { type: "audio/wav" }));
+        previewCache.set(key, url);
+      }
+      previewAudio = new Audio(url);
+      await previewAudio.play();
+    } else {
+      const v = sysByVoice(voiceId);
+      await speakSystem(sampleFor(v.lang), voiceId, 1);
+    }
+  } catch (e) {
+    console.error(e); toast(e.message, "error");
+  } finally {
+    btn.textContent = label; busy = false; setStatus(""); setProgress(null); syncControls();
+  }
+}
+
+/* ---------- Generate ---------- */
+async function playLive(items, res) {
+  stopPromise = new Promise(r => stopResolve = r);
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  const rate = parseFloat(speedEl.value);
+  for (const it of items) {
+    if (cancelRequested) break;
+    if (it.type === "pause") { await Promise.race([sleep(it.sec * 1000), stopPromise]); continue; }
+    setStatus(`Speaking: ${it.speaker}`);
+    if (isModel(it.voice)) {
+      const { audio, rate: sr } = lineAudio(it, res);
+      const url = URL.createObjectURL(new Blob([floatToWav(audio, sr)], { type: "audio/wav" }));
+      audioEl = new Audio(url);
+      await Promise.race([new Promise(r => { audioEl.onended = r; audioEl.onerror = r; audioEl.play().catch(r); }), stopPromise]);
+      URL.revokeObjectURL(url);
+    } else {
+      await Promise.race([speakSystem(it.text, it.voice, rate), stopPromise]);
+    }
+  }
+  showIdle();
+  setStatus(cancelRequested ? "Stopped." : "Finished.");
+}
+
+async function generateAndPlay() {
+  if (busy) return;
+  stopAudios(); invalidateAudio();
+  const { items } = parseScript(textEl.value, cast);
+  const speech = items.filter(i => i.type === "speech");
+  if (!speech.length) { toast("There's nothing to read yet."); return; }
+  const missing = speech.find(i => !voiceAvailable(i.voice));
+  if (missing) { toast(`${missing.speaker}'s voice isn't available on this device. Pick another voice for that character.`, "error"); return; }
+
+  const modelItems = speech.filter(i => isModel(i.voice));
+  const allModel = modelItems.length === speech.length;
+  const jobs = [];
+  modelItems.forEach(it => {
+    it.jobIdx = [];
+    const id = modelByVoice(it.voice).id;
+    splitText(it.text).forEach(c => { it.jobIdx.push(jobs.length); jobs.push({ text: c, model: id }); });
+  });
+
+  cancelRequested = false; busy = true; syncControls();
+  playBtn.hidden = true; stopBtn.hidden = false;
+  try {
+    let res = [];
+    if (jobs.length) {
+      res = await runJob(jobs, (n, t) => { setStatus(`Generating audio: part ${n} of ${t}`); setProgress(n / t * 100); });
+      setProgress(null);
+      if (!res) { setStatus("Stopped."); showIdle(); return; }
+    }
+    if (allModel) {
+      const { wav, seconds } = mixToWav(items, res);
+      wavBlob = new Blob([wav], { type: "audio/wav" });
+      audioUrl = URL.createObjectURL(wavBlob);
+      audioEl = new Audio(audioUrl);
+      audioEl.onended = () => { showIdle(); setStatus("Finished."); };
+      saveBtn.hidden = false;
+      setStatus(`Playing (${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, "0")})...`);
+      await audioEl.play();
+    } else {
+      setStatus("Playing live. Scripts with system voices can't be saved.");
+      await playLive(items, res);
+    }
+  } catch (e) {
+    console.error(e);
+    setProgress(null); setStatus(""); showIdle();
+    toast(e.message || "Couldn't generate the audio.", "error");
+  } finally {
+    busy = false; syncControls();
+  }
+}
+function stopAll() {
+  cancelRequested = true;
+  stopAudios();
+  if (worker) worker.postMessage({ type: "cancel" });
+  stopResolve?.();
+  showIdle(); setStatus("Stopped.");
+}
+function saveWav() {
+  if (!wavBlob) return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(wavBlob); a.download = "narration.wav";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Audio saved.");
+}
+
+/* ---------- Models dialog ---------- */
+function renderModels() {
+  const list = $("model-list"); list.replaceChildren();
+  models.forEach(m => {
+    const row = el("div", "model-row");
+    const mk = (ph, key, cls) => {
+      const i = el("input", cls); i.type = "text"; i.value = m[key]; i.placeholder = ph; i.setAttribute("aria-label", ph);
+      i.addEventListener("input", () => { m[key] = i.value; previewCache.clear(); persist(); });
+      return i;
+    };
+    const rm = el("button", "secondary small wide", "Remove this model"); rm.type = "button";
+    rm.addEventListener("click", () => { models = models.filter(x => x !== m); renderModels(); persist(); });
+    row.append(mk("Name shown in menus", "label"), mk("Model id or folder name", "id"), mk("Sample sentence for Preview", "sample", "wide"), rm);
+    list.append(row);
+  });
+}
+$("btn-models").addEventListener("click", () => { renderModels(); modelsDialog.showModal(); });
+$("btn-close-models").addEventListener("click", () => { modelsDialog.close(); renderCast(); renderToolbar(); schedulePreview(); });
+modelsDialog.addEventListener("close", () => { renderCast(); schedulePreview(); });
+$("btn-add-model").addEventListener("click", () => {
+  models.push({ key: "c" + nextModel++, label: "New model", id: "", sample: "Hello, this is a test." });
+  renderModels(); persist();
+});
+
+/* ---------- Wire up ---------- */
+textEl.addEventListener("input", () => { invalidateAudio(); syncControls(); schedulePreview(); persist(); });
+speedEl.addEventListener("input", () => { $("speed-val").textContent = String(parseFloat(speedEl.value)); persist(); });
+playBtn.addEventListener("click", generateAndPlay);
+stopBtn.addEventListener("click", stopAll);
+saveBtn.addEventListener("click", saveWav);
+$("btn-sample").addEventListener("click", () => {
+  ["Lucía", "Mateo"].forEach(name => { if (!cast.some(c => c.name.trim().toLowerCase() === name.toLowerCase())) addCharacter(name); });
+  cast[0].voice = "m:spa";
+  renderCast(); renderToolbar();
+  textEl.value = SAMPLE_TEXT; invalidateAudio(); syncControls(); schedulePreview(); persist();
+});
+
+restore();
+$("speed-val").textContent = String(parseFloat(speedEl.value));
+if ("speechSynthesis" in window) { speechSynthesis.onvoiceschanged = loadSystemVoices; systemVoices = speechSynthesis.getVoices(); }
+renderCast(); renderToolbar(); renderScriptPreview(); syncControls();
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("./sw.js").catch(e => console.warn("Offline cache unavailable:", e));
+}
+</script>
+</body>
+</html>

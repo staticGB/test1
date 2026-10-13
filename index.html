@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narration Studio</title>
+<style>
+  :root {
+    --bg: #14171c; --panel: #1c2027; --field: #101318; --line: #2d333d;
+    --text: #e6e9ee; --muted: #8e97a5; --accent: #5aa9ff; --accent-strong: #3b8cf0;
+    --warn: #e0b050; --bad: #e5666d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center; padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 760px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 18px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.25rem; margin: 0; font-weight: 650; }
+  h2 { font-size: 1rem; margin: 0; font-weight: 650; }
+  label, .label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
+  textarea, select, input[type=text] {
+    width: 100%; background: var(--field); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; font: inherit;
+  }
+  textarea { min-height: 260px; resize: vertical; font-size: 1.05rem; line-height: 1.6; }
+  input[readonly] { color: var(--muted); }
+  textarea:focus, select:focus, input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 12px 18px;
+    color: #fff; background: var(--accent-strong); cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.secondary { background: #2c333f; }
+  button.secondary:hover:not(:disabled) { background: #384150; }
+  button.stop { background: #b9444b; }
+  button.small { padding: 8px 12px; font-size: .85rem; }
+  button.grow { flex: 1; min-width: 180px; }
+  [hidden] { display: none !important; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .range-line { display: flex; align-items: center; gap: 12px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .status { font-size: .9rem; color: var(--muted); min-height: 1.3em; }
+  .bar { height: 8px; background: var(--field); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .hint { font-size: .82rem; color: var(--muted); line-height: 1.5; margin: 0; }
+  a { color: var(--accent); }
+  code { background: #0c0f13; padding: 1px 6px; border-radius: 5px; font-size: .9em; }
+
+  .cast { display: grid; gap: 8px; }
+  .cast-row { display: grid; grid-template-columns: minmax(100px, 1fr) 1.7fr auto auto; gap: 8px; align-items: center; }
+  .cast-row .spacer { width: 40px; }
+  @media (max-width: 600px) {
+    .cast-row { grid-template-columns: 1fr auto auto; }
+    .cast-row input[type=text] { grid-column: 1 / -1; }
+  }
+  .section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .chips .label { margin: 0 4px 0 0; }
+  .divider { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+
+  details { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  summary { cursor: pointer; font-weight: 600; }
+  summary.warn { color: var(--warn); }
+  details[open] > summary { margin-bottom: 10px; }
+  .dir-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .dir-row p { margin: 4px 0 0; font-size: .85rem; color: var(--muted); line-height: 1.45; }
+  .pv-row { display: grid; grid-template-columns: 130px 1fr; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .92rem; }
+  .pv-who { font-weight: 600; }
+  .pv-voice { color: var(--muted); font-size: .78rem; font-weight: 400; }
+  .pv-tag { color: var(--accent); font-size: .78rem; margin-right: 6px; }
+  .pv-pause { color: var(--muted); font-style: italic; }
+  .pv-warn { color: var(--warn); font-size: .88rem; padding: 4px 0; }
+  @media (max-width: 520px) { .pv-row { grid-template-columns: 1fr; gap: 2px; } }
+
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(560px, 94vw); max-height: 86vh; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .dlg { padding: 20px; display: grid; gap: 14px; }
+  .dlg-list { overflow: auto; max-height: 48vh; display: grid; gap: 4px; padding-right: 4px; }
+  .dlg-group { font-size: .8rem; color: var(--muted); margin: 10px 0 2px; }
+  .voice-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; }
+
+  #toast { position: fixed; top: 16px; right: 16px; background: #243040; border: 1px solid var(--line);
+    padding: 10px 14px; border-radius: 10px; font-size: .9rem; max-width: 340px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 10; }
+  #toast.show { opacity: 1; }
+  #toast.error { background: #3a2226; border-color: #6b2f36; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<main>
+  <div class="panel">
+    <header>
+      <h1>Narration Studio</h1>
+      <div class="actions">
+        <button id="btn-voices" class="secondary small" type="button">Browse all voices</button>
+        <button id="btn-sample" class="secondary small" type="button">Insert sample</button>
+      </div>
+    </header>
+
+    <div>
+      <div id="progress-wrap" class="bar" hidden><div id="progress"></div></div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <h2>Cast</h2>
+        <button id="btn-add-char" class="secondary small" type="button">Add character</button>
+      </div>
+      <div id="cast" class="cast"></div>
+      <p class="hint" style="margin-top:8px">Press Preview on any row to hear that voice. Lines without a character name are read by the Narrator.</p>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Script</h2></div>
+      <div class="chips" id="toolbar"></div>
+      <textarea id="text" placeholder="Write a story, or a script with characters:&#10;&#10;Mara: Do you see that?&#10;George: I see it. I just don't believe it."></textarea>
+    </section>
+
+    <details id="directions">
+      <summary>Directions: what you can write in the script</summary>
+      <div class="dir-row">
+        <div><code>Name: line</code><p>Character speaks the line. Use the character buttons above the text box to add one.</p></div>
+        <span></span>
+      </div>
+      <div class="dir-row">
+        <div><code>[pause 1.5]</code><p>Silence for that many seconds. Put it on its own line.</p></div>
+        <button class="secondary small" type="button" data-insert="pause">Insert</button>
+      </div>
+      <div class="dir-row">
+        <div><code>[overlap] Name: line</code><p>The line starts before the previous one ends, like someone cutting in. <code>[overlap 1]</code> starts it 1 second early. The default is 0.6.</p></div>
+        <button class="secondary small" type="button" data-insert="overlap">Insert</button>
+      </div>
+      <div class="dir-row">
+        <div><code>blank line</code><p>A short pause between paragraphs.</p></div>
+        <span></span>
+      </div>
+      <div class="dir-row">
+        <div><code>[anything else]</code><p>Other bracketed text is skipped, not read aloud. The voices can't be told how to feel.</p></div>
+        <span></span>
+      </div>
+    </details>
+
+    <details id="preview">
+      <summary id="pv-summary">Script preview</summary>
+      <div id="pv-body"></div>
+    </details>
+
+    <div>
+      <label for="speed">Speed: <span id="speed-val">1</span>x</label>
+      <div class="range-line"><input id="speed" type="range" min="0.6" max="1.5" step="0.05" value="1"></div>
+    </div>
+
+    <div class="actions">
+      <button id="btn-play" class="grow" type="button" disabled>Generate and play</button>
+      <button id="btn-stop" class="grow stop" type="button" hidden>Stop</button>
+      <button id="btn-save" class="secondary" type="button" hidden>Save .wav</button>
+    </div>
+
+    <p class="hint">Voices run on your device with Kokoro. No account or API key. The first use downloads the voice model (about 90 MB), and each voice downloads a small file the first time it is used. Use Browse all voices to download them all so the app works offline. For Spanish, Tagalog, Hiligaynon, Mandarin and Arabic, see the <a href="./languages.html">Languages app</a>.</p>
+  </div>
+</main>
+
+<dialog id="voice-dialog">
+  <div class="dlg">
+    <div class="section-head">
+      <h2>All voices</h2>
+      <button id="btn-close-voices" class="secondary small" type="button">Close</button>
+    </div>
+    <p class="hint">Press Play to hear a voice. ★ marks the voices I believe the model's authors rate highest, but trust your ears. Add a voice to your cast with the dropdown on its row.</p>
+    <div id="voice-list" class="dlg-list"></div>
+    <div class="bar"><div id="dl-progress"></div></div>
+    <div class="status" id="dl-status"></div>
+    <button id="btn-dl-all" type="button">Download all voices for offline use</button>
+  </div>
+</dialog>
+
+<script type="module">
+/* ============ Voices ============ */
+const VOICE_GROUPS = [
+  ["US women", [["af_heart","Heart",1],["af_bella","Bella",1],["af_nicole","Nicole"],["af_sarah","Sarah"],["af_sky","Sky"],["af_alloy","Alloy"],["af_aoede","Aoede"],["af_jessica","Jessica"],["af_kore","Kore"],["af_nova","Nova"],["af_river","River"]]],
+  ["US men", [["am_michael","Michael"],["am_fenrir","Fenrir"],["am_puck","Puck"],["am_adam","Adam"],["am_echo","Echo"],["am_eric","Eric"],["am_liam","Liam"],["am_onyx","Onyx"],["am_santa","Santa"]]],
+  ["UK women", [["bf_emma","Emma"],["bf_isabella","Isabella"],["bf_alice","Alice"],["bf_lily","Lily"]]],
+  ["UK men", [["bm_george","George"],["bm_fable","Fable"],["bm_daniel","Daniel"],["bm_lewis","Lewis"]]]
+];
+const VOICE_MAP = {};
+const ALL_IDS = [];
+VOICE_GROUPS.forEach(([group, list]) => list.forEach(([id, name, star]) => {
+  VOICE_MAP[id] = { name, group, star: !!star }; ALL_IDS.push(id);
+}));
+// New characters get voices in this order so neighbours sound different (alternating gender and accent).
+const ASSIGN_ORDER = ["af_heart","am_michael","bf_emma","bm_george","af_bella","am_fenrir","bf_isabella","bm_fable","af_nicole","am_puck","bf_alice","bm_daniel"];
+
+const SAMPLES = [
+  { cast: [], text: "The lantern flickered once, then steadied, and in its small circle of light the tunnel wall began to glitter. Mara pressed her palm against the stone and felt a faint warmth, as though something on the other side were breathing. She had been told the mine was empty for forty years. The painted symbols curling across the rock told a different story, and they were fresh." },
+  { cast: [], text: "By the third morning at sea, the fog had thinned enough to reveal a coastline no chart had ever shown. Cliffs of pale green rose from the water, laced with waterfalls that fell without a sound. Captain Oyelaran lowered her spyglass and said nothing. Behind her, the crew had gone quiet, the way people do when a legend turns out to be a place." },
+  { cast: ["Mara", "George"], text: "Narrator: The tunnel fell silent. Then Mara's lantern flickered, and the walls began to glitter.\n\nMara: George, do you see that?\nGeorge: I see it. I just don't believe it...\n[overlap] Mara: It's moving!\n[pause 1]\nNarrator: Somewhere deeper in the rock, something answered." }
+];
+
+/* PURE:START (no page access below this line until PURE:END) */
+function splitText(text, maxLen = 280) {
+  const sentences = text.replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]*["')\]]*\s*/g) || [text];
+  const chunks = []; let cur = "";
+  for (const s of sentences) {
+    if ((cur + s).length > maxLen && cur) { chunks.push(cur.trim()); cur = ""; }
+    if (s.length > maxLen) {
+      let rest = s.trim();
+      while (rest.length > maxLen) {
+        let cut = rest.lastIndexOf(" ", maxLen);
+        if (cut < maxLen / 2) cut = maxLen;
+        chunks.push(rest.slice(0, cut).trim());
+        rest = rest.slice(cut).trim();
+      }
+      if (rest) chunks.push(rest);
+    } else cur += s;
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.filter(Boolean);
+}
+
+function floatToWav(float32, sampleRate) {
+  const buffer = new ArrayBuffer(44 + float32.length * 2);
+  const v = new DataView(buffer);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + float32.length * 2, true); w(8, "WAVE");
+  w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, float32.length * 2, true);
+  for (let i = 0; i < float32.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return buffer;
+}
+
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+// Turns the script text into a list of items: speech lines, pauses. Also returns warnings.
+function parseScript(raw, cast) {
+  const items = [], warnings = [];
+  const byName = new Map();
+  cast.forEach(c => {
+    const k = c.name.trim().toLowerCase();
+    if (!k) return;
+    if (byName.has(k)) warnings.push(`Two characters are named "${c.name.trim()}". The first one is used.`);
+    else byName.set(k, c);
+  });
+  const narrator = cast[0];
+  let blankPending = false;
+
+  raw.split(/\r?\n/).forEach((line, idx) => {
+    const n = idx + 1;
+    let t = line.trim();
+    if (!t) { blankPending = items.length > 0; return; }
+    if (blankPending) {
+      if (items[items.length - 1].type === "speech") items.push({ type: "pause", sec: 0.4, auto: true });
+      blankPending = false;
+    }
+
+    let m = t.match(/^\[pause(?:\s+([\d.]+))?\]\s*$/i);
+    if (m) {
+      let sec = m[1] ? parseFloat(m[1]) : 1;
+      if (!isFinite(sec)) sec = 1;
+      items.push({ type: "pause", sec: clamp(sec, 0, 30) });
+      return;
+    }
+
+    let overlap = false, overlapSec = 0.6;
+    m = t.match(/^\[overlap(?:\s+([\d.]+))?\]\s*/i);
+    if (m) {
+      overlap = true;
+      if (m[1] && isFinite(parseFloat(m[1]))) overlapSec = clamp(parseFloat(m[1]), 0, 5);
+      t = t.slice(m[0].length);
+    }
+
+    let speaker = narrator;
+    m = t.match(/^(\p{L}[^:\[\]]{0,23}?)\s*:\s*(.*)$/u);
+    if (m && m[1].trim().split(/\s+/).length <= 2) {
+      const c = byName.get(m[1].trim().toLowerCase());
+      if (c) { speaker = c; t = m[2]; }
+      else warnings.push(`Line ${n}: "${m[1].trim()}" isn't in your cast, so the Narrator reads the whole line including that word. Add a character with that name to fix it.`);
+    }
+
+    t = t.replace(/\[[^\]]*\]/g, tag => { warnings.push(`Line ${n}: ${tag} isn't a direction the app knows, so it is skipped.`); return " "; })
+         .replace(/\s+/g, " ").trim();
+    if (!t) return;
+
+    if (overlap && !items.some(i => i.type === "speech")) {
+      warnings.push(`Line ${n}: [overlap] has no earlier line to overlap, so it is ignored.`);
+      overlap = false;
+    }
+    items.push({ type: "speech", speaker: speaker.name, voice: speaker.voice, text: t, overlap, overlapSec, line: n });
+  });
+  return { items, warnings };
+}
+
+// Places every spoken line on a timeline (overlapping where asked) and mixes them into one buffer.
+function mixToWav(items, results) {
+  const GAP = 0.18;
+  const first = results.find(Boolean);
+  const rate = first.rate;
+  const placed = [];
+  let end = 0, prev = null;
+
+  for (const it of items) {
+    if (it.type === "pause") { end += it.sec; continue; }
+    const parts = [];
+    it.jobIdx.forEach((j, k) => {
+      if (k) parts.push(new Float32Array(Math.round(rate * GAP)));
+      parts.push(results[j].audio);
+    });
+    const len = parts.reduce((a, p) => a + p.length, 0);
+    const audio = new Float32Array(len);
+    let o = 0; parts.forEach(p => { audio.set(p, o); o += p.length; });
+    const dur = len / rate;
+
+    let start;
+    if (it.overlap && prev) start = Math.max(prev.start, prev.end - it.overlapSec);
+    else start = end > 0 ? end + GAP : 0;
+
+    placed.push({ start, audio });
+    prev = { start, end: start + dur };
+    end = Math.max(end, start + dur);
+  }
+
+  const out = new Float32Array(Math.ceil(end * rate) + 2);
+  for (const p of placed) {
+    const s = Math.round(p.start * rate);
+    for (let i = 0; i < p.audio.length; i++) out[s + i] += p.audio[i];
+  }
+  let peak = 0;
+  for (let i = 0; i < out.length; i++) { const a = Math.abs(out[i]); if (a > peak) peak = a; }
+  if (peak > 0.99) { const g = 0.99 / peak; for (let i = 0; i < out.length; i++) out[i] *= g; }
+  return { wav: floatToWav(out, rate), seconds: out.length / rate };
+}
+/* PURE:END */
+
+/* ============ Page ============ */
+const $ = id => document.getElementById(id);
+const textEl = $("text"), speedEl = $("speed"), castEl = $("cast"), toolbarEl = $("toolbar");
+const playBtn = $("btn-play"), stopBtn = $("btn-stop"), saveBtn = $("btn-save");
+const statusEl = $("status"), progWrap = $("progress-wrap"), progEl = $("progress");
+const pvSummary = $("pv-summary"), pvBody = $("pv-body");
+const dialog = $("voice-dialog"), dlStatus = $("dl-status"), dlProgress = $("dl-progress"), dlBtn = $("btn-dl-all");
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+/* ---------- State ---------- */
+let nextId = 1;
+let cast = [{ id: nextId++, name: "Narrator", voice: "af_heart" }];
+let busy = false, cancelRequested = false, dlRunning = false;
+let audioEl = null, audioUrl = null, wavBlob = null;
+let previewAudio = null;
+const previewCache = new Map();
+
+/* ---------- Small UI helpers ---------- */
+function toast(msg, type = "info") {
+  const t = $("toast");
+  t.textContent = msg; t.className = "show " + (type === "error" ? "error" : "");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.className = "", 4500);
+}
+function setStatus(s) { statusEl.textContent = s; dlStatus.textContent = s; }
+function setProgress(p) {
+  progWrap.hidden = p == null;
+  if (p != null) { const v = clamp(p, 0, 100) + "%"; progEl.style.width = v; dlProgress.style.width = v; }
+  else dlProgress.style.width = "0";
+}
+function syncControls() {
+  playBtn.disabled = busy || !textEl.value.trim();
+  document.querySelectorAll(".btn-preview").forEach(b => b.disabled = busy);
+  $("btn-sample").disabled = busy;
+  dlBtn.disabled = busy && !dlRunning;
+}
+function showIdle() { playBtn.hidden = false; stopBtn.hidden = true; }
+function invalidateAudio() {
+  wavBlob = null; saveBtn.hidden = true;
+  if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
+}
+function stopAudios() {
+  if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; }
+  if (previewAudio) { previewAudio.pause(); previewAudio.currentTime = 0; }
+}
+
+/* ---------- Saved settings ---------- */
+function persist() {
+  try {
+    localStorage.setItem("ns.cast", JSON.stringify(cast.map(c => ({ name: c.name, voice: c.voice }))));
+    localStorage.setItem("ns.text", textEl.value);
+    localStorage.setItem("ns.speed", speedEl.value);
+  } catch {}
+}
+function restore() {
+  try {
+    const c = JSON.parse(localStorage.getItem("ns.cast"));
+    if (Array.isArray(c) && c.length && c.every(x => x && typeof x.name === "string" && VOICE_MAP[x.voice])) {
+      cast = c.map((x, i) => ({ id: nextId++, name: i === 0 ? "Narrator" : x.name, voice: x.voice }));
+    }
+    const t = localStorage.getItem("ns.text"); if (t) textEl.value = t;
+    const s = parseFloat(localStorage.getItem("ns.speed")); if (s >= 0.6 && s <= 1.5) speedEl.value = s;
+  } catch {}
+}
+
+/* ---------- Cast ---------- */
+function voiceOptionsHtml(selected) {
+  return VOICE_GROUPS.map(([group, list]) =>
+    `<optgroup label="${group}">` + list.map(([id, name, star]) =>
+      `<option value="${id}"${id === selected ? " selected" : ""}>${name}${star ? " ★" : ""} (${group.toLowerCase().replace("women", "woman").replace("men", "man")})</option>`
+    ).join("") + `</optgroup>`
+  ).join("");
+}
+function pickVoice() {
+  const used = new Set(cast.map(c => c.voice));
+  const order = [...ASSIGN_ORDER, ...ALL_IDS];
+  return order.find(v => !used.has(v)) || ASSIGN_ORDER[cast.length % ASSIGN_ORDER.length];
+}
+function uniqueName(base) {
+  const names = new Set(cast.map(c => c.name.trim().toLowerCase()));
+  if (!names.has(base.toLowerCase())) return base;
+  let i = 2; while (names.has(`${base} ${i}`.toLowerCase())) i++;
+  return `${base} ${i}`;
+}
+function addCharacter(name) {
+  const c = { id: nextId++, name: name || uniqueName("Character"), voice: pickVoice() };
+  cast.push(c); return c;
+}
+function renderCast() {
+  castEl.replaceChildren();
+  cast.forEach((c, i) => {
+    const row = el("div", "cast-row"); row.dataset.id = c.id;
+    const name = el("input"); name.type = "text"; name.value = c.name; name.maxLength = 24;
+    name.setAttribute("aria-label", "Character name");
+    if (i === 0) name.readOnly = true;
+    const sel = el("select"); sel.innerHTML = voiceOptionsHtml(c.voice); sel.setAttribute("aria-label", `Voice for ${c.name}`);
+    const prev = el("button", "secondary small btn-preview", "Preview"); prev.type = "button";
+    const rm = el("button", "secondary small", "Remove"); rm.type = "button";
+    row.append(name, sel, prev);
+    if (i === 0) { const sp = el("span", "spacer"); row.append(sp); } else row.append(rm);
+    castEl.append(row);
+  });
+  syncControls();
+}
+function renderToolbar() {
+  toolbarEl.replaceChildren();
+  toolbarEl.append(el("span", "label", "Add a line for:"));
+  cast.forEach(c => {
+    if (!c.name.trim()) return;
+    const b = el("button", "secondary small", c.name.trim()); b.type = "button"; b.dataset.char = c.id;
+    toolbarEl.append(b);
+  });
+  toolbarEl.append(el("span", "divider"));
+  const p = el("button", "secondary small", "Pause"); p.type = "button"; p.dataset.insert = "pause";
+  const o = el("button", "secondary small", "Overlap"); o.type = "button"; o.dataset.insert = "overlap";
+  toolbarEl.append(p, o);
+}
+
+castEl.addEventListener("input", e => {
+  if (e.target.matches("input[type=text]")) {
+    const c = cast.find(x => x.id == e.target.closest(".cast-row").dataset.id);
+    const cleaned = e.target.value.replace(/[:\[\]]/g, "");
+    if (cleaned !== e.target.value) e.target.value = cleaned;
+    c.name = cleaned; renderToolbar(); schedulePreview(); persist();
+  }
+});
+castEl.addEventListener("change", e => {
+  if (e.target.matches("select")) {
+    const c = cast.find(x => x.id == e.target.closest(".cast-row").dataset.id);
+    c.voice = e.target.value; invalidateAudio(); schedulePreview(); persist();
+  }
+});
+castEl.addEventListener("click", e => {
+  const row = e.target.closest(".cast-row"); if (!row) return;
+  const c = cast.find(x => x.id == row.dataset.id);
+  if (e.target.classList.contains("btn-preview")) previewVoice(c.voice, e.target);
+  else if (e.target.textContent === "Remove") {
+    cast = cast.filter(x => x !== c); renderCast(); renderToolbar(); schedulePreview(); persist();
+  }
+});
+$("btn-add-char").addEventListener("click", () => { addCharacter(); renderCast(); renderToolbar(); schedulePreview(); persist(); });
+
+/* ---------- Inserting directions ---------- */
+function lineBounds(pos) {
+  const v = textEl.value;
+  const s = v.lastIndexOf("\n", pos - 1) + 1;
+  let e = v.indexOf("\n", pos); if (e === -1) e = v.length;
+  return [s, e];
+}
+function commit(newVal, caret) {
+  textEl.value = newVal; textEl.focus(); textEl.setSelectionRange(caret, caret);
+  textEl.dispatchEvent(new Event("input"));
+}
+function insertOnNewLine(snippet) {
+  const v = textEl.value, [s, e] = lineBounds(textEl.selectionStart), line = v.slice(s, e);
+  if (/^\s*\[overlap[^\]]*\]\s*$/i.test(line)) { // a bare [overlap] line: continue on the same line
+    const add = (line.endsWith(" ") ? "" : " ") + snippet;
+    return commit(v.slice(0, e) + add + v.slice(e), e + add.length);
+  }
+  if (line.trim() === "") return commit(v.slice(0, s) + snippet + v.slice(e), s + snippet.length);
+  commit(v.slice(0, e) + "\n" + snippet + v.slice(e), e + 1 + snippet.length);
+}
+function insertOverlap() {
+  const v = textEl.value, [s, e] = lineBounds(textEl.selectionStart);
+  if (/^\s*\[overlap/i.test(v.slice(s, e))) return textEl.focus();
+  commit(v.slice(0, s) + "[overlap] " + v.slice(s), textEl.selectionStart + 10);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.char) { const c = cast.find(x => x.id == b.dataset.char); if (c) insertOnNewLine(`${c.name.trim()}: `); }
+  else if (b.dataset.insert === "pause") insertOnNewLine("[pause 1.5]");
+  else if (b.dataset.insert === "overlap") insertOverlap();
+});
+
+/* ---------- Script preview ---------- */
+let pvTimer = null;
+function schedulePreview() { clearTimeout(pvTimer); pvTimer = setTimeout(renderScriptPreview, 200); }
+function renderScriptPreview() {
+  const { items, warnings } = parseScript(textEl.value, cast);
+  const n = items.filter(i => i.type === "speech").length;
+  pvSummary.textContent = n
+    ? `Script preview: ${n} line${n === 1 ? "" : "s"}${warnings.length ? `, ${warnings.length} to check` : ""}`
+    : "Script preview";
+  pvSummary.classList.toggle("warn", warnings.length > 0);
+  pvBody.replaceChildren();
+  if (!items.length) { pvBody.append(el("p", "hint", "Nothing to read yet. Type or paste some text above.")); return; }
+  warnings.forEach(w => pvBody.append(el("div", "pv-warn", w)));
+  items.forEach(it => {
+    const row = el("div", "pv-row");
+    if (it.type === "pause") {
+      row.append(el("div", "pv-who"), el("div", "pv-pause", it.auto ? "paragraph pause" : `pause ${it.sec} s`));
+    } else {
+      const who = el("div", "pv-who", it.speaker);
+      who.append(el("div", "pv-voice", VOICE_MAP[it.voice]?.name || it.voice));
+      const txt = el("div");
+      if (it.overlap) txt.append(el("span", "pv-tag", `overlaps by ${it.overlapSec} s`));
+      txt.append(document.createTextNode(it.text));
+      row.append(who, txt);
+    }
+    pvBody.append(row);
+  });
+}
+
+/* ---------- Voice worker ---------- */
+let worker = null, modelReady = false;
+const handlers = {};
+function startWorker() {
+  if (worker) return worker;
+  worker = new Worker("./tts-worker.js", { type: "module" });
+  worker.onmessage = e => handlers[e.data.type]?.(e.data);
+  worker.onerror = e => handlers.error?.({ message: e.message || "The voice worker failed to start." });
+  return worker;
+}
+function resetWorker() { if (worker) worker.terminate(); worker = null; modelReady = false; }
+
+function ensureKokoro() {
+  if (modelReady) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const w = startWorker();
+    setStatus("Loading voice engine..."); setProgress(0);
+    handlers.progress = m => { setProgress(m.percent); setStatus(m.text); };
+    handlers.ready = () => { modelReady = true; resolve(); };
+    handlers.error = m => { resetWorker(); reject(new Error(m.message)); };
+    w.postMessage({ type: "load" });
+  });
+}
+// jobs: [{ text, voice, speed }] -> array of { audio, rate } (or null if cancelled)
+async function runJob(jobs, onChunk) {
+  await ensureKokoro();
+  if (cancelRequested) return null;
+  return new Promise((resolve, reject) => {
+    const results = new Array(jobs.length);
+    handlers.chunk = m => { results[m.index] = { audio: m.audio, rate: m.rate }; onChunk?.(m.index + 1, m.total); };
+    handlers.done = () => resolve(results);
+    handlers.cancelled = () => resolve(null);
+    handlers.error = m => reject(new Error(m.message));
+    worker.postMessage({ type: "generate", jobs });
+  });
+}
+
+/* ---------- Voice previews ---------- */
+async function previewVoice(voiceId, btn) {
+  if (busy) return;
+  stopAudios();
+  const label = btn.textContent;
+  let url = previewCache.get(voiceId);
+  try {
+    if (!url) {
+      cancelRequested = false; busy = true; syncControls(); btn.textContent = "...";
+      const name = VOICE_MAP[voiceId]?.name || "your narrator";
+      const res = await runJob([{ text: `Hi, I'm ${name}. This is how I sound.`, voice: voiceId, speed: 1 }]);
+      if (!res) return;
+      url = URL.createObjectURL(new Blob([floatToWav(res[0].audio, res[0].rate)], { type: "audio/wav" }));
+      previewCache.set(voiceId, url);
+    }
+    previewAudio = new Audio(url);
+    await previewAudio.play();
+  } catch (e) {
+    console.error(e);
+    toast(`Couldn't load the voice "${VOICE_MAP[voiceId]?.name || voiceId}". The first use needs internet. Details are in the console.`, "error");
+  } finally {
+    btn.textContent = label; busy = false; setStatus(""); setProgress(null); syncControls();
+  }
+}
+
+/* ---------- Generate ---------- */
+async function generateAndPlay() {
+  if (busy) return;
+  stopAudios(); invalidateAudio();
+  const { items } = parseScript(textEl.value, cast);
+  const speech = items.filter(i => i.type === "speech");
+  if (!speech.length) { toast("There's nothing to read yet."); return; }
+  const speed = parseFloat(speedEl.value);
+  const jobs = [];
+  speech.forEach(it => {
+    it.jobIdx = [];
+    splitText(it.text).forEach(c => { it.jobIdx.push(jobs.length); jobs.push({ text: c, voice: it.voice, speed }); });
+  });
+
+  cancelRequested = false; busy = true; syncControls();
+  playBtn.hidden = true; stopBtn.hidden = false;
+  try {
+    const res = await runJob(jobs, (n, t) => { setStatus(`Generating audio: part ${n} of ${t}`); setProgress(n / t * 100); });
+    setProgress(null);
+    if (!res) { setStatus("Stopped."); showIdle(); return; }
+    const { wav, seconds } = mixToWav(items, res);
+    wavBlob = new Blob([wav], { type: "audio/wav" });
+    audioUrl = URL.createObjectURL(wavBlob);
+    audioEl = new Audio(audioUrl);
+    audioEl.onended = () => { showIdle(); setStatus("Finished."); };
+    saveBtn.hidden = false;
+    setStatus(`Playing (${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, "0")})...`);
+    await audioEl.play();
+  } catch (e) {
+    console.error(e);
+    setProgress(null); setStatus(""); showIdle();
+    toast("Couldn't generate the audio. The first run needs internet to download the voices. Details are in the console.", "error");
+  } finally {
+    busy = false; syncControls();
+  }
+}
+function stopAll() {
+  cancelRequested = true;
+  stopAudios();
+  if (worker) worker.postMessage({ type: "cancel" });
+  showIdle(); setStatus("Stopped.");
+}
+function saveWav() {
+  if (!wavBlob) return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(wavBlob); a.download = "narration.wav";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Audio saved.");
+}
+
+/* ---------- Voice browser ---------- */
+function buildVoiceList() {
+  const list = $("voice-list"); list.replaceChildren();
+  VOICE_GROUPS.forEach(([group, voices]) => {
+    list.append(el("div", "dlg-group", group));
+    voices.forEach(([id, name, star]) => {
+      const row = el("div", "voice-row");
+      row.append(el("span", null, name + (star ? " ★" : "")));
+      const b = el("button", "secondary small btn-preview", "Play"); b.type = "button";
+      b.addEventListener("click", () => previewVoice(id, b));
+      row.append(b); list.append(row);
+    });
+  });
+}
+async function downloadAllVoices() {
+  if (dlRunning) { cancelRequested = true; if (worker) worker.postMessage({ type: "cancel" }); return; }
+  if (busy) return;
+  dlRunning = true; cancelRequested = false; busy = true; syncControls();
+  dlBtn.textContent = "Cancel"; dlBtn.disabled = false;
+  const failed = []; let done = 0;
+  try {
+    for (const id of ALL_IDS) {
+      if (cancelRequested) break;
+      setStatus(`Downloading voice ${done + 1} of ${ALL_IDS.length}: ${VOICE_MAP[id].name}`);
+      setProgress(done / ALL_IDS.length * 100);
+      try { const r = await runJob([{ text: "Hi.", voice: id, speed: 1 }]); if (!r) break; }
+      catch (e) { console.error(id, e); failed.push(VOICE_MAP[id].name); }
+      done++;
+    }
+    setProgress(null);
+    setStatus(cancelRequested ? "Cancelled. Voices downloaded so far are saved."
+      : failed.length ? `Finished, but these failed: ${failed.join(", ")}. Check your connection and try again.`
+      : "Done. All voices are saved on this device.");
+  } catch (e) {
+    console.error(e); setProgress(null); setStatus("Couldn't download the voices. The first run needs internet.");
+  } finally {
+    dlRunning = false; busy = false; cancelRequested = false;
+    dlBtn.textContent = "Download all voices for offline use"; syncControls();
+  }
+}
+
+/* ---------- Wire up ---------- */
+textEl.addEventListener("input", () => { invalidateAudio(); syncControls(); schedulePreview(); persist(); });
+speedEl.addEventListener("input", () => { $("speed-val").textContent = String(parseFloat(speedEl.value)); persist(); });
+speedEl.addEventListener("change", invalidateAudio);
+playBtn.addEventListener("click", generateAndPlay);
+stopBtn.addEventListener("click", stopAll);
+saveBtn.addEventListener("click", saveWav);
+$("btn-sample").addEventListener("click", () => {
+  const s = SAMPLES[Math.floor(Math.random() * SAMPLES.length)];
+  s.cast.forEach(name => { if (!cast.some(c => c.name.trim().toLowerCase() === name.toLowerCase())) addCharacter(name); });
+  renderCast(); renderToolbar();
+  textEl.value = s.text; invalidateAudio(); syncControls(); schedulePreview(); persist();
+});
+$("btn-voices").addEventListener("click", () => { if (!$("voice-list").children.length) buildVoiceList(); dialog.showModal(); syncControls(); });
+$("btn-close-voices").addEventListener("click", () => dialog.close());
+dlBtn.addEventListener("click", downloadAllVoices);
+
+restore();
+$("speed-val").textContent = String(parseFloat(speedEl.value));
+renderCast(); renderToolbar(); renderScriptPreview(); syncControls();
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("./sw.js").catch(e => console.warn("Offline cache unavailable:", e));
+}
+</script>
+</body>
+</html>
