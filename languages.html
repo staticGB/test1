@@ -50,6 +50,10 @@
   .bar { height: 8px; background: var(--field); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
   .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   .hint { font-size: .82rem; color: var(--muted); line-height: 1.5; margin: 0; }
+  a.btn-link { display: inline-block; font-weight: 600; font-size: .85rem; padding: 8px 12px; border-radius: 10px;
+    color: #fff; background: #2c333f; text-decoration: none; }
+  a.btn-link:hover { background: #384150; }
+  a.btn-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   code { background: #0c0f13; padding: 1px 6px; border-radius: 5px; font-size: .9em; }
   .check { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); }
 
@@ -102,7 +106,7 @@
     <header>
       <h1>Narration Studio: Languages</h1>
       <div class="actions">
-        <a href="./">English voices app</a>
+        <a class="btn-link" href="./">English voices</a>
         <button id="btn-models" class="secondary small" type="button">Manage models</button>
         <button id="btn-sample" class="secondary small" type="button">Insert Spanish sample</button>
       </div>
